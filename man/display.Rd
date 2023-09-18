@@ -7,6 +7,8 @@
 display(
   bpmnXML,
   overlays = NULL,
+  enableDefaultOverlayStyle = TRUE,
+  bpmnElementStyles = NULL,
   width = NULL,
   height = NULL,
   elementId = NULL
@@ -16,20 +18,28 @@ display(
 \item{bpmnXML}{A file name or 'XML' document or string in 'BPMN' 'XML' format}
 
 \item{overlays}{An element or a list of elements to be added to the diagram's existing elements.
-Use overlay function to create an overlay object with content and relative position.}
+Use the \code{\link{create_overlay}} function to create an overlay object with content and a relative position.}
 
-\item{width}{Fixed width for widget (in css units). The default is \code{NULL}, which results in intelligent automatic sizing based on the widget's container.}
+\item{enableDefaultOverlayStyle}{If no style is set on an overlay, and this parameter is set to \code{TRUE}, the default style will be applied to the overlay.
+By default, \code{enableDefaultOverlayStyle} is set to \code{TRUE}.}
 
-\item{height}{Fixed height for widget (in css units). The default is \code{NULL}, which results in intelligent automatic sizing based on the widget's container.}
+\item{bpmnElementStyles}{a list of existing elements with their style to apply.
+Use the \code{\link{create_shape_style}} or \code{\link{create_edge_style}} functions to create the style of 'BPMN' elements.}
 
-\item{elementId}{The id of the 'HTML' element to enclose the widget.
-Use an explicit element ID for the widget (rather than an automatically
-generated one). Useful if you have other 'JavaScript' that needs to explicitly
+\item{width}{A fixed width for the widget (in CSS units).
+The default value is \code{NULL}, which results in intelligent automatic sizing based on the widget's container.}
+
+\item{height}{A fixed height for the widget (in CSS units).
+The default value is \code{NULL}, which results in intelligent automatic sizing based on the widget's container.}
+
+\item{elementId}{The ID of the 'HTML' element to enclose the widget.
+Use an explicit element ID for the widget (rather than an automatically generated one).
+This is useful if you have other 'JavaScript' that needs to explicitly
 discover and interact with a specific widget instance.}
 }
 \value{
-A \code{bpmnVisualizationR} Widget that will intelligently print itself into 'HTML' in a variety of contexts
-     including the 'R' console, within 'R Markdown' documents, and within 'Shiny' output bindings.
+A \code{bpmnVisualizationR} widget that will intelligently print itself into 'HTML' in a variety of contexts
+including the 'R' console, within 'R Markdown' documents, and within 'Shiny' output bindings.
 }
 \description{
 Display 'BPMN' diagram based on 'BPMN' definition in 'XML' format
@@ -38,18 +48,111 @@ Display 'BPMN' diagram based on 'BPMN' definition in 'XML' format
 # Load the BPMN file
 bpmn_file <- system.file("examples/Order_Management.bpmn", package = "bpmnVisualizationR")
 
-# Display the BPMN diagram
+# Example 1: Display the BPMN diagram
 bpmnVisualizationR::display(bpmn_file, width='auto', height='auto')
 
-# Display the BPMN diagram with overlays
+# Example 2: Display the BPMN diagram featuring overlays with their default positions and styles
 overlays <- list(
   bpmnVisualizationR::create_overlay("start_event_1_1", "42"),
   bpmnVisualizationR::create_overlay("sequence_flow_1_1", "42"),
-  bpmnVisualizationR::create_overlay("task_1_1", "9")
+  bpmnVisualizationR::create_overlay("task_1_1", "9"),
+  bpmnVisualizationR::create_overlay("sequence_flow_1_2", "8"),
+  bpmnVisualizationR::create_overlay("call_activity_1_1", "7")
+)
+
+bpmnVisualizationR::display(
+  bpmn_file,
+  overlays,
+  width='auto',
+  height='auto'
+)
+
+# Example 3: Display the BPMN diagram featuring overlays using custom styles and positions
+taskStyle <- bpmnVisualizationR::create_overlay_style(
+  font_color = 'DarkSlateGray',
+  font_size = 23,
+  fill_color = 'MistyRose',
+  stroke_color = 'Red'
+)
+
+flowStyle <- bpmnVisualizationR::create_overlay_style(
+  font_color = 'WhiteSmoke',
+  font_size = 19,
+  fill_color = 'Teal',
+  stroke_color = 'SpringGreen'
+)
+
+overlays <- list(
+  bpmnVisualizationR::create_overlay("start_event_1_1", "42", position = "middle-left"),
+  bpmnVisualizationR::create_overlay("sequence_flow_1_1", "42", flowStyle, "end"),
+  bpmnVisualizationR::create_overlay("task_1_1", "9", taskStyle),
+  bpmnVisualizationR::create_overlay("sequence_flow_1_2", "8"),
+  bpmnVisualizationR::create_overlay("call_activity_1_1", "7")
 )
 bpmnVisualizationR::display(bpmn_file, overlays, width='auto', height='auto')
 
+# Example 4: Display the BPMN diagram featuring overlays, 
+# but exclude their default styles and positions
+overlays <- list(
+  bpmnVisualizationR::create_overlay("start_event_1_1", "42", position = "middle-left"),
+  bpmnVisualizationR::create_overlay("sequence_flow_1_1", "42", flowStyle, "end"),
+  bpmnVisualizationR::create_overlay("task_1_1", "9", taskStyle, "bottom-right"),
+  bpmnVisualizationR::create_overlay("sequence_flow_1_2", "8",  position = 'start')
+)
+
+bpmnVisualizationR::display(
+  bpmn_file,
+  overlays,
+  enableDefaultOverlayStyle=FALSE,
+  width='auto',
+  height='auto'
+)
+
+# Example 5: Display the BPMN diagram featuring styling for BPMN elements
+bpmnElementStyles <- list(
+  bpmnVisualizationR::create_shape_style(
+    elementIds = list("call_activity_1_1"),
+    stroke_color = 'RoyalBlue',
+    font_color = 'DarkOrange',
+    font_family = 'Arial',
+    font_size = 12,
+    font_bold = TRUE,
+    font_italic = TRUE,
+    font_strike_through = TRUE,
+    font_underline = TRUE,
+    opacity = 75,
+    fill_color = 'Yellow',
+    fill_opacity = 50
+  ),
+  bpmnVisualizationR::create_edge_style(
+    elementIds = list("sequence_flow_1_4"),
+    stroke_color = 'DeepPink',
+    stroke_width = 3,
+    stroke_opacity = 70,
+    font_color = 'ForestGreen',
+    font_family = 'Courier New',
+    font_size = 14,
+    font_bold = TRUE,
+    font_italic = TRUE,
+    font_strike_through = FALSE,
+    font_underline = FALSE,
+    font_opacity = 80,
+    opacity = 80
+  )
+)
+
+bpmnVisualizationR::display(
+  bpmn_file,
+  bpmnElementStyles = bpmnElementStyles,
+  width='auto',
+  height='auto'
+)
+
 }
 \seealso{
-\code{\link{create_overlay}} to create an overlay
+\itemize{
+\item \code{\link{create_overlay}} to create an overlay
+\item \code{\link{create_shape_style}} to create the structure style for the shape
+\item \code{\link{create_edge_style}} to create the structure style for the edge
+}
 }

@@ -21,49 +21,64 @@ HTMLWidgets.widget({
     factory: function(containerElt, width, height) {
         const bpmnVisualization = new bpmnvisu.BpmnVisualization({ container: containerElt, navigation: { enabled: true } });
 
+        function buildDefaultOverlayStyle(isShape) {
+            if(isShape) {
+                return {
+                    font: {
+                        color: 'White',
+                        size: 14,
+                    },
+                    fill: {
+                        color: 'rgba(54,160,54)',
+                    },
+                    stroke: {
+                        color: 'rgba(54,160,54)',
+                    }
+                };
+            }
+
+            return {
+                font: {
+                    color: 'White',
+                    size: 18,
+                },
+                fill: {
+                    color: 'rgba(170,107,209)',
+                },
+                stroke: {
+                    color: 'rgba(170,107,209)',
+                }
+            };
+        }
+
+        function buildDefaultOverlayPosition(isShape) {
+            return isShape ? 'top-center' : 'middle';
+        }
+
         return {
-            renderValue: function(x) {
-                bpmnVisualization.load(x.bpmnContent, { fit: {type: bpmnvisu.FitType.Center, margin: 30} });
+            renderValue: function({bpmnContent, overlays, enableDefaultOverlayStyle, bpmnElementStyles}) {
+                bpmnVisualization.load(bpmnContent, { fit: {type: bpmnvisu.FitType.Center, margin: 30} });
+
+                if(bpmnElementStyles) {
+                    for(const { elementIds, style } of bpmnElementStyles) {
+                        bpmnVisualization.bpmnElementsRegistry.updateStyle(elementIds, style);
+                    }
+                }
 
                 // Add overlays
-                x.overlays && x.overlays.map(overlay => {
-                    const elementsByIds = bpmnVisualization.bpmnElementsRegistry.getElementsByIds(overlay.elementId);
+                overlays?.map(({elementId, ...rest}) => {
+                    const overlayConfig = {...rest};
 
-                    if (elementsByIds.length) {
-                        const overlayConfig = elementsByIds[0].bpmnSemantic.isShape ? {
-                            position: 'top-center',
-                            label: overlay.label,
-                            style: {
-                                font: {
-                                    color: 'White',
-                                    size: 14,
-                                },
-                                fill: {
-                                    color: 'rgba(54,160,54)',
-                                },
-                                stroke: {
-                                    color: 'rgba(54,160,54)',
-                                }
-                            }
-                        } : {
-                            position: 'middle',
-                            label: overlay.label,
-                            style: {
-                                font: {
-                                    color: 'White',
-                                    size: 18,
-                                },
-                                fill: {
-                                    color: 'rgba(170,107,209)',
-                                },
-                                stroke: {
-                                    color: 'rgba(170,107,209)',
-                                }
-                            }
-                        };
-
-                        bpmnVisualization.bpmnElementsRegistry.addOverlays(overlay.elementId, overlayConfig);
+                    if(enableDefaultOverlayStyle && !(overlayConfig.style && overlayConfig.position)) {
+                        const elements = bpmnVisualization.bpmnElementsRegistry.getModelElementsByIds(elementId);
+                        if (elements.length) {
+                            const isShape = elements[0].isShape;
+                            overlayConfig.style ??= buildDefaultOverlayStyle(isShape);
+                            overlayConfig.position ??= buildDefaultOverlayPosition(isShape);
+                        }
                     }
+
+                    bpmnVisualization.bpmnElementsRegistry.addOverlays(elementId, overlayConfig);
                 });
             },
             resize: function(width, height) {
@@ -71,7 +86,7 @@ HTMLWidgets.widget({
             },
 
             // Make the bpmnVisualization object available as a property on the widget instance we're returning from factory().
-            // This is generally a good idea for extensibility--it helps users of this widget interact directly with bpmnVisualization, if needed.
+            // This is generally a good idea for extensibility: it helps users of this widget to interact directly with bpmnVisualization, if required.
             s: bpmnVisualization
         };
     }
